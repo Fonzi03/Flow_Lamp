@@ -12,6 +12,8 @@ Flow Lamp watches a dimmable light (or a plain switch) and runs the lamp through
 
 > Some screenshots were captured during development. The Home Assistant pages (integration, Configure, device) predate the final rename, so a few labels differ slightly from the current release.
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Fonzi03&repository=Flow_Lamp&category=integration)
+
 ## Contents
 
 - [How a cycle works](#how-a-cycle-works)
