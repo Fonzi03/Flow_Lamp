@@ -1,0 +1,37 @@
+{
+  "entity": {
+    "sensor": {
+      "dimming_level": {
+        "default": "mdi:brightness-percent"
+      },
+      "time_remaining": {
+        "default": "mdi:timer-sand"
+      },
+      "state": {
+        "default": "mdi:lava-lamp",
+        "state": {
+          "off": "mdi:power",
+          "warm_up": "mdi:thermometer-chevron-up",
+          "flowing": "mdi:lava-lamp",
+          "cool_down": "mdi:snowflake-thermometer"
+        }
+      }
+    },
+    "switch": {
+      "power": {
+        "default": "mdi:lava-lamp"
+      },
+      "enabled": {
+        "default": "mdi:timer-cog"
+      }
+    },
+    "select": {
+      "wax_color": {
+        "default": "mdi:palette"
+      },
+      "liquid_color": {
+        "default": "mdi:water"
+      }
+    }
+  }
+}

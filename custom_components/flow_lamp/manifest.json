@@ -1,0 +1,19 @@
+{
+  "domain": "flow_lamp",
+  "name": "Flow Lamp",
+  "version": "1.0.3",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "frontend"
+  ],
+  "documentation": "https://github.com/your-name/flow-lamp",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/your-name/flow-lamp/issues",
+  "requirements": [],
+  "after_dependencies": [
+    "lovelace"
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a lamp",
+        "description": "Pick the light or switch that powers the lamp. Times and looks can be changed later with Configure.",
+        "data": {
+          "light": "Lamp (light or switch)",
+          "warm_pct": "Warm-up brightness (%)",
+          "maintain_pct": "Maintain brightness (%)",
+          "floor_pct": "Lowest brightness at end of runtime (%)",
+          "warmup_min": "Warm-up time (minutes)",
+          "hold_min": "Hold at maintain brightness (minutes)",
+          "max_run_min": "Maximum runtime (minutes)",
+          "cooldown_min": "Cooldown (minutes)",
+          "wax_color": "Wax color",
+          "liquid_color": "Liquid color",
+          "liquid_clear": "Clear liquid (no color)",
+          "dimming": "Dimming"
+        },
+        "data_description": {
+          "warm_pct": "Brightness during warm-up. Ignored for lamps that can't dim.",
+          "maintain_pct": "Brightness after warm-up. Ignored for lamps that can't dim.",
+          "floor_pct": "Brightness is tapered linearly from maintain to this value, reaching it at max runtime. Ignored for lamps that can't dim.",
+          "warmup_min": "Turning the lamp off before this time has passed simply resets, with no cooldown.",
+          "max_run_min": "Lamp is switched off here and cooldown begins. Check the lamp manual.",
+          "cooldown_min": "Turn-ons are blocked (lamp switched back off) for this long.",
+          "wax_color": "Used by the Flow Lamp dashboard card. The wax is seen through the liquid, so its color is mixed with the liquid's.",
+          "liquid_color": "Used by the Flow Lamp dashboard card.",
+          "liquid_clear": "Turn on for clear liquid. The liquid color is then ignored.",
+          "dimming": "Lamps that can't dim (switches, on/off-only lights) skip the brightness taper and have no Dimming level sensor."
+        }
+      }
+    },
+    "error": {
+      "floor_above_maintain": "Lowest brightness can't be above maintain brightness.",
+      "runtime_too_short": "Warm-up + hold can't be longer than the maximum runtime."
+    },
+    "abort": {
+      "already_configured": "This lamp is already managed by Flow Lamp."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cycle settings and colors",
+        "data": {
+          "warm_pct": "Warm-up brightness (%)",
+          "maintain_pct": "Maintain brightness (%)",
+          "floor_pct": "Lowest brightness at end of runtime (%)",
+          "warmup_min": "Warm-up time (minutes)",
+          "hold_min": "Hold at maintain brightness (minutes)",
+          "max_run_min": "Maximum runtime (minutes)",
+          "cooldown_min": "Cooldown (minutes)",
+          "wax_color": "Wax color",
+          "liquid_color": "Liquid color",
+          "liquid_clear": "Clear liquid (no color)",
+          "dimming": "Dimming"
+        },
+        "data_description": {
+          "warm_pct": "Brightness during warm-up. Ignored for lamps that can't dim.",
+          "maintain_pct": "Brightness after warm-up. Ignored for lamps that can't dim.",
+          "floor_pct": "Brightness is tapered linearly from maintain to this value, reaching it at max runtime. Ignored for lamps that can't dim.",
+          "warmup_min": "Turning the lamp off before this time has passed simply resets, with no cooldown.",
+          "max_run_min": "Lamp is switched off here and cooldown begins. Check the lamp manual.",
+          "cooldown_min": "Turn-ons are blocked (lamp switched back off) for this long.",
+          "wax_color": "Used by the Flow Lamp dashboard card. The wax is seen through the liquid, so its color is mixed with the liquid's.",
+          "liquid_color": "Used by the Flow Lamp dashboard card.",
+          "liquid_clear": "Turn on for clear liquid. The liquid color is then ignored.",
+          "dimming": "Lamps that can't dim (switches, on/off-only lights) skip the brightness taper and have no Dimming level sensor."
+        }
+      }
+    },
+    "error": {
+      "floor_above_maintain": "Lowest brightness can't be above maintain brightness.",
+      "runtime_too_short": "Warm-up + hold can't be longer than the maximum runtime."
+    }
+  },
+  "entity": {
+    "switch": {
+      "enabled": {
+        "name": "Cycle management"
+      },
+      "power": {
+        "name": "Lamp Power"
+      }
+    },
+    "select": {
+      "wax_color": {
+        "name": "Wax color",
+        "state": {
+          "yellow": "Yellow",
+          "orange": "Orange",
+          "red": "Red",
+          "pink": "Pink",
+          "purple": "Purple",
+          "blue": "Blue",
+          "teal": "Teal",
+          "green": "Green",
+          "white": "White",
+          "custom": "Custom"
+        }
+      },
+      "liquid_color": {
+        "name": "Liquid color",
+        "state": {
+          "clear": "Clear",
+          "yellow": "Yellow",
+          "orange": "Orange",
+          "red": "Red",
+          "pink": "Pink",
+          "purple": "Purple",
+          "blue": "Blue",
+          "teal": "Teal",
+          "green": "Green",
+          "custom": "Custom"
+        }
+      }
+    },
+    "sensor": {
+      "dimming_level": {
+        "name": "Dimming level"
+      },
+      "time_remaining": {
+        "name": "Time remaining"
+      },
+      "state": {
+        "name": "State",
+        "state": {
+          "off": "Off",
+          "warm_up": "Warm Up",
+          "flowing": "Flowing",
+          "cool_down": "Cool Down"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cooldown_active": {
+      "message": "The lamp is cooling down. It can be turned on again in {remaining}."
+    }
+  }
+}

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="wax" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc45c"/>
+      <stop offset="0.45" stop-color="#ff7a3d"/>
+      <stop offset="1" stop-color="#d9226a"/>
+    </linearGradient>
+  </defs>
+  <!-- flat pool with a leaning strand rising from its left into a growing, stretching blob -->
+  <path fill="url(#wax)" d="M70 448
+    C58 402 98 378 150 376
+    C186 374 198 362 200 338
+    C202 306 176 292 182 258
+    C188 226 236 214 262 232
+    C286 249 280 282 262 304
+    C250 320 252 352 280 360
+    C330 372 372 354 410 366
+    C450 378 462 420 440 448
+    C420 474 360 476 256 476
+    C150 476 84 476 70 448 Z"/>
+  <!-- oblong, vertical kidney-shaped blob (two blobs merged) -->
+  <path fill="url(#wax)" d="M357.4 62.8 C385.3 64.7 401.1 97.8 395.4 136.2 C389.8 172.8 398.1 197.0 381.0 212.6 C364.0 226.6 332.3 221.0 321.5 203.4 C309.7 185.7 338.0 167.5 345.7 144.5 C353.4 119.7 316.7 100.3 326.2 79.1 C333.2 64.4 345.4 61.9 357.4 62.8 Z"/>
+  <!-- round blobs -->
+  <circle cx="190" cy="140" r="30" fill="url(#wax)"/>
+  <circle cx="262" cy="74" r="14" fill="url(#wax)"/>
+  <!-- highlights -->
+  <ellipse cx="214" cy="256" rx="12" ry="22" fill="#fff" opacity="0.30" transform="rotate(16 214 256)"/>
+  <ellipse cx="381" cy="118" rx="7" ry="26" fill="#fff" opacity="0.32" transform="rotate(6 381 118)"/>
+  <ellipse cx="180" cy="128" rx="6" ry="11" fill="#fff" opacity="0.34" transform="rotate(16 180 128)"/>
+  <ellipse cx="120" cy="426" rx="18" ry="11" fill="#fff" opacity="0.28" transform="rotate(-16 120 426)"/>
+</svg>
