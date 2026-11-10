@@ -4,9 +4,6 @@
       "dimming_level": {
         "default": "mdi:brightness-percent"
       },
-      "time_remaining": {
-        "default": "mdi:timer-sand"
-      },
       "state": {
         "default": "mdi:lava-lamp",
         "state": {
@@ -15,6 +12,9 @@
           "flowing": "mdi:lava-lamp",
           "cool_down": "mdi:snowflake-thermometer"
         }
+      },
+      "time_remaining": {
+        "default": "mdi:timer-sand"
       }
     },
     "switch": {

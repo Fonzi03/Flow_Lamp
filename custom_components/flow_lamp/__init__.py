@@ -4,18 +4,48 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import voluptuous as vol
+from aiohttp import web
+from homeassistant.components import websocket_api
 from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.util import dt as dt_util
 
 from .manager import FlowLampConfigEntry, FlowLampManager
 
 PLATFORMS = [Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
 CARD_URL = "/flow_lamp_static/flow-lamp-card.js"  # no query string: a "?v=" on the resource broke the card picker
 _LOGGER = logging.getLogger(__name__)
+
+
+class FlowLampCardView(HomeAssistantView):
+    """Serve the card so browsers always check for a newer version.
+
+    Without a Cache-Control header a browser may keep using an old copy of the card for days after an
+    update (and the mobile app for longer). `no-cache` makes it revalidate on every load; an unchanged
+    file costs only a tiny 304 reply.
+    """
+
+    url = CARD_URL
+    name = "flow_lamp:card"
+    requires_auth = False
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+
+    async def get(self, request: web.Request) -> web.StreamResponse:
+        return web.FileResponse(self._path, headers={"Cache-Control": "no-cache"})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "flow_lamp/now"})
+@callback
+def _ws_now(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
+    """Home Assistant's own clock, so the card's countdown never depends on the browser's time."""
+    connection.send_result(msg["id"], {"now": dt_util.utcnow().isoformat()})
 
 
 async def _async_ensure_card_resource(hass: HomeAssistant) -> bool:
@@ -44,12 +74,11 @@ async def _async_ensure_card_resource(hass: HomeAssistant) -> bool:
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Serve the Flow Lamp dashboard card and make sure dashboards load it."""
+    websocket_api.async_register_command(hass, _ws_now)
     card = Path(__file__).parent / "www" / "flow-lamp-card.js"
     if not card.is_file():
         return True
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL, str(card), cache_headers=False)]
-    )
+    hass.http.register_view(FlowLampCardView(card))
     if await _async_ensure_card_resource(hass):
         return True
 

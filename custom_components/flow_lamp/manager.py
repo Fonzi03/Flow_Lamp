@@ -215,6 +215,15 @@ class FlowLampManager:
         return 100 if brightness is None else round(brightness / 255 * 100)
 
     @property
+    def ends_at(self) -> datetime | None:
+        """When the current phase ends: shut-off while running, end of cooldown while cooling down."""
+        if self.stage == STAGE_RUNNING and self.cycle_start is not None:
+            return self.cycle_start + timedelta(minutes=self.profile.max_run_min)
+        if self.stage == STAGE_COOLDOWN:
+            return self.cooldown_until
+        return None
+
+    @property
     def minutes_remaining(self) -> int:
         """Runtime left while running, cooldown left while cooling down, else 0."""
         if self.stage == STAGE_RUNNING and self.elapsed_min is not None:

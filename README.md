@@ -10,22 +10,23 @@ Flow Lamp watches a dimmable light (or a plain switch) and runs the lamp through
 
 **Tested on Home Assistant 2026.10.1.** Earlier versions are not supported.
 
-> Some screenshots were captured during development. The Home Assistant pages (integration, Configure, device) predate the final rename, so a few labels differ slightly from the current release.
+> Some screenshots were taken during development, so a few labels in the Home Assistant pages may differ slightly from the current release.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Fonzi03&repository=Flow_Lamp&category=integration)
+See the [changelog](CHANGELOG.md) for what changed in each release.
 
 ## Contents
 
 - [How a cycle works](#how-a-cycle-works)
 - [Requirements](#requirements)
 - [Install](#install)
-- [Upgrading from the earlier "Flow" version](#upgrading-from-the-earlier-flow-version)
+- [Updating](#updating)
 - [Set up a lamp](#set-up-a-lamp)
 - [Entities](#entities)
 - [The dashboard card](#the-dashboard-card)
 - [Colors: how wax and liquid mix](#colors-how-wax-and-liquid-mix)
 - [Lamps that can't dim](#lamps-that-cant-dim)
 - [Automation examples](#automation-examples)
+- [Keeping the activity log quiet](#keeping-the-activity-log-quiet)
 - [Safety notes](#safety-notes)
 - [Troubleshooting](#troubleshooting)
 - [Identifiers](#identifiers)
@@ -70,15 +71,11 @@ Add this repository as a custom repository of type *Integration*, install **Flow
 
 The integration registers its dashboard card as a resource automatically (`/flow_lamp_static/flow-lamp-card.js`). If your dashboard resources are defined in YAML, Home Assistant doesn't let integrations edit them. Flow Lamp then falls back to loading the card as an extra frontend module, and you can also add that URL as a JavaScript module resource yourself.
 
-## Upgrading from the earlier "Flow" version
+## Updating
 
-Flow Lamp is a rename, so it installs next to the old one rather than over it. To switch:
+Replace the `custom_components/flow_lamp` folder with the new version, restart Home Assistant fully, then **hard-refresh the browser** (Ctrl+Shift+R; in the mobile app, clear its frontend cache).
 
-1. Remove the old **Flow** entries (Settings, Devices & services, Flow, delete each entry).
-2. Delete the old `config/custom_components/flow` folder.
-3. Delete the old dashboard resource `/flow_static/flow-card.js` (Settings, Dashboards, Resources) if it is still listed.
-4. Install Flow Lamp as above, restart, and add your lamps again.
-5. Replace any `custom:flow-card` cards with the **Flow Lamp** card (`custom:flow-lamp-card`). Entity IDs change too, for example `sensor.aurora_lamp_flow_state` becomes `sensor.aurora_lamp_flow_lamp_state`, so update automations that use them.
+The refresh matters: a browser or the app can keep running an old copy of the card, which shows up as a wrong or missing Time Remaining (for example a bare number such as `660`, or `—` while the lamp is running). The card file is served so that browsers re-check it on every load, so after one refresh later updates are picked up automatically. See the [changelog](CHANGELOG.md) for what changed in each release.
 
 ## Set up a lamp
 
@@ -108,9 +105,9 @@ Each lamp becomes one device with these entities. Entity IDs follow your lamp's 
 
 | Entity | Type | Purpose |
 |---|---|---|
+| Time remaining | sensor (minutes) | Minutes left in the current phase: runtime while Warm Up or Flowing, cooldown while Cool Down, `0` when Off. It is a number with a unit, so Home Assistant keeps it out of the activity log. The `formatted` attribute has the readable text (`1h 30min`). |
 | State | sensor | **Off**, **Warm Up**, **Flowing**, **Cool Down**. The maintain hold and the taper both count as Flowing. |
 | Dimming level | sensor (%) | The actual dimmer output, read from the light. Only exists for lamps that can dim. |
-| Time remaining | sensor | Runtime left (Warm Up and Flowing) or cooldown left (Cool Down). Shows `45 min` up to 59 minutes, then `1 h 30 min`. |
 | Lamp Power | switch | Turns the lamp on or off. Turning it on during cooldown is refused, and Home Assistant shows a message saying how long is left. |
 | Cycle management | switch | Turns Flow Lamp's management of this lamp on or off. Turning it off drops the current cycle. |
 | Wax color | select | Preset wax colors. Shows **Custom** if you set an exact color in Configure. |
@@ -118,7 +115,13 @@ Each lamp becomes one device with these entities. Entity IDs follow your lamp's 
 
 ![The device page](docs/ha-device.png)
 
-The State sensor also carries attributes: `light`, `dimmable`, `cycle_start`, `cooldown_until`, `wax_color`, `liquid_color`, `liquid_clear`.
+The State sensor also carries attributes: `light`, `dimmable`, `cycle_start`, `cooldown_until`, `ends_at`, `wax_color`, `liquid_color`, `liquid_clear`. `ends_at` is when the current phase ends (the shut-off time while Warm Up or Flowing, the end of the cooldown while Cool Down, empty when Off). Attributes only change when the phase changes, so they don't add to the activity log.
+
+For automations, the **Time remaining** sensor gives the minutes directly. `ends_at` gives the exact end time and works in templates:
+
+```yaml
+{{ (as_datetime(state_attr('sensor.aurora_lamp_flow_lamp_state', 'ends_at')) - now()).total_seconds() / 60 }}
+```
 
 ## The dashboard card
 
@@ -130,9 +133,11 @@ state_entity: sensor.aurora_lamp_flow_lamp_state   # the only required option
 name: Aurora                                       # optional title
 ```
 
-The dimming and time-remaining sensors and the Lamp Power switch are found automatically from the same Flow Lamp device, so you only choose the State sensor. The picker only lists Flow Lamp entities. The card has no color settings: it uses the wax and liquid colors from the integration.
+The Dimming Level sensor and the Lamp Power switch are found automatically from the same Flow Lamp device, so you only choose the State sensor. The picker only lists Flow Lamp entities. The card has no color settings: it uses the wax and liquid colors from the integration.
 
 ![The card editor](docs/card-editor.png)
+
+**Time Remaining** shows `45min` up to 59 minutes, then `11h 2min` (or `2h` on the hour), and a dash (`—`) when nothing is left, for example when the lamp is Off. It is worked out from Home Assistant's own clock, not the browser's: the card asks Home Assistant for its time and counts down from the phase's `ends_at`. Nothing is stored in the browser, so you can close the page and open it again, or open it on another device, and the time is always right.
 
 **What the animation does**
 
@@ -211,6 +216,30 @@ actions:
       entity_id: switch.aurora_lamp_flow_lamp_lamp_power
 ```
 
+## Keeping the activity log quiet
+
+Flow Lamp only creates activity-log entries for real changes: the State sensor changing phase (Warm Up, Flowing, Cool Down, Off), and the lamp, Lamp Power and Cycle management changing.
+
+The **Time remaining** and **Dimming level** sensors are numbers with a unit, and Home Assistant leaves those out of the activity log, so the once-a-minute countdown never shows up there. (In testing, Time remaining counted down from 30 to 26 minutes with no entries in the log, only the State sensor's change to Flowing.) The attributes on the State sensor only change at phase changes.
+
+**History database.** While the lamp is running, Time remaining is recorded once a minute (about 480 rows over an 8-hour run). While the lamp is off the value stays at 0, so nothing is written. If you don't want that history, exclude it:
+
+```yaml
+recorder:
+  exclude:
+    entity_globs:
+      - sensor.*_flow_lamp_time_remaining
+```
+
+If you ever do see the countdown in the activity log on your version of Home Assistant, this hides it:
+
+```yaml
+logbook:
+  exclude:
+    entity_globs:
+      - sensor.*_flow_lamp_time_remaining
+```
+
 ## Safety notes
 
 - Flow Lamp enforces the limits through Home Assistant. **If Home Assistant or your Zigbee network is down while the lamp is on, nothing enforces the runtime.** If your dimmer has a device-level auto-off timer, set it a little above your maximum runtime as a backstop.
@@ -227,7 +256,9 @@ actions:
 | The integration icon is the old one or missing | Local brand icons need Home Assistant 2026.3 or newer. Then restart and hard-refresh. |
 | The version shown doesn't match the zip | The old files are still in place. Delete `config/custom_components/flow_lamp` first, then unzip so that `manifest.json` ends up directly inside `flow_lamp`. |
 | There's no Dimming Level on the card | The lamp is a switch or an on/off-only light, or Dimming is set to *On/off only*. This is expected. |
-| A lamp turned on during cooldown goes straight back off | That is the protection working. Check **Time remaining**. |
+| A lamp turned on during cooldown goes straight back off | That is the protection working. The card's **Time Remaining** shows how long is left. |
+| Time Remaining shows `—` | Normal when the lamp is Off or the phase is about to end: nothing is left to count down. If it shows `—` while the lamp is running with plenty of time left, see the next row. |
+| Time Remaining shows a bare number (for example `660`), or `—` while the lamp is running | The browser (or the mobile app) is still running an old copy of the card. Hard-refresh once (Ctrl+Shift+R); in the mobile app clear the frontend cache. The browser console should then show `FLOW LAMP 1.3.0` (or newer), and times appear as `11h 2min`. If the console shows the right version and it still shows `—` while running, check that the State sensor has an `ends_at` attribute. |
 | Colors on the card don't change | Colors are set in the integration (Configure, or the Wax color and Liquid color selects), not on the card. |
 
 ## Identifiers

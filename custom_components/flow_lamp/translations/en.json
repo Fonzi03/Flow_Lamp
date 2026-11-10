@@ -121,9 +121,6 @@
       "dimming_level": {
         "name": "Dimming level"
       },
-      "time_remaining": {
-        "name": "Time remaining"
-      },
       "state": {
         "name": "State",
         "state": {
@@ -132,6 +129,9 @@
           "flowing": "Flowing",
           "cool_down": "Cool Down"
         }
+      },
+      "time_remaining": {
+        "name": "Time remaining"
       }
     }
   },

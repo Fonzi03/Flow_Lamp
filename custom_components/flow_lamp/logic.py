@@ -72,9 +72,11 @@ def display_state(stage: str, elapsed_min: float | None, warmup_min: int) -> str
 
 
 def format_remaining(minutes: int) -> str:
-    """'45 min' up to 59 minutes, then '1 h 30 min' / '2 h'."""
+    """'45min' up to 59 minutes, then '1h 30min' / '2h'. Nothing left shows a dash."""
     minutes = max(0, int(minutes))
+    if minutes == 0:
+        return "\u2014"
     if minutes < 60:
-        return f"{minutes} min"
+        return f"{minutes}min"
     hours, mins = divmod(minutes, 60)
-    return f"{hours} h" if mins == 0 else f"{hours} h {mins} min"
+    return f"{hours}h" if mins == 0 else f"{hours}h {mins}min"

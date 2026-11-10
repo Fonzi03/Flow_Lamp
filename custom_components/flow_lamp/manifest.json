@@ -1,12 +1,13 @@
 {
   "domain": "flow_lamp",
   "name": "Flow Lamp",
-  "version": "1.0.3",
+  "version": "1.3.0",
   "codeowners": [],
   "config_flow": true,
   "dependencies": [
     "http",
-    "frontend"
+    "frontend",
+    "websocket_api"
   ],
   "documentation": "https://github.com/your-name/flow-lamp",
   "integration_type": "service",

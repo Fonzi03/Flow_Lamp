@@ -3,7 +3,7 @@
  * Ships with the Flow Lamp integration.
  * Embedded font: Shrikhand, SIL Open Font License 1.1 (see LICENSE-Shrikhand.txt).
  */
-const FLOW_LAMP_CARD_VERSION = "1.0.3";
+const FLOW_LAMP_CARD_VERSION = "1.3.0";
 const FLOW_FONT = "FlowLampShrikhand";
 
 // The font has to be registered on the document; @font-face inside a shadow root is ignored.
@@ -18,6 +18,14 @@ const FLOW_FONT = "FlowLampShrikhand";
 })();
 
 /* ---------- colour helpers (RGB as 0..1 triples) ---------- */
+const formatRemaining = (minutes) => {
+  const m = Math.max(0, Math.round(minutes));
+  if (m === 0) return "\u2014"; // nothing left: a dash, never "0min"
+  if (m < 60) return `${m}min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return r === 0 ? `${h}h` : `${h}h ${r}min`;
+};
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const clampC = (a) => a.map(clamp01);
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
@@ -194,6 +202,11 @@ class FlowLampCard extends HTMLElement {
     this._config = {};
     this._sib = {};
     this._tankW = 330;
+    this._clockOffset = 0; // Home Assistant's clock minus the browser's, in ms
+    this._clockSynced = 0;
+    this._clockTried = 0;
+    this._clockBusy = false;
+    this._ticker = null;
     this._wax = scale(DEFAULT_WAX, 1 / 255);
     this._liq = scale(DEFAULT_LIQUID, 1 / 255);
     this._clear = false;
@@ -226,18 +239,80 @@ class FlowLampCard extends HTMLElement {
   connectedCallback() {
     this._observe();
     this._ensureLoop();
+    this._startTicker();
   }
 
   disconnectedCallback() {
     if (this._raf) cancelAnimationFrame(this._raf);
     this._raf = null;
     if (this._ro) this._ro.disconnect();
+    this._stopTicker();
+  }
+
+  /* ---------- time remaining: worked out from Home Assistant's own clock ---------- */
+  _startTicker() {
+    if (this._ticker) return;
+    this._onVisible = () => {
+      if (!document.hidden) {
+        this._syncClock();
+        this._refreshTime();
+      }
+    };
+    document.addEventListener("visibilitychange", this._onVisible);
+    this._ticker = setInterval(() => {
+      if (Date.now() - this._clockSynced > 5 * 60 * 1000) this._syncClock();
+      this._refreshTime();
+    }, 15000);
+    this._syncClock();
+  }
+
+  _stopTicker() {
+    if (this._ticker) clearInterval(this._ticker);
+    this._ticker = null;
+    if (this._onVisible) document.removeEventListener("visibilitychange", this._onVisible);
+    this._onVisible = null;
+  }
+
+  // Ask Home Assistant for its clock and remember how far the browser's clock is from it.
+  async _syncClock() {
+    if (!this._hass || this._clockBusy) return;
+    this._clockBusy = true;
+    this._clockTried = Date.now();
+    try {
+      const t0 = Date.now();
+      const res = await this._hass.callWS({ type: "flow_lamp/now" });
+      const t1 = Date.now();
+      const server = Date.parse(res && res.now);
+      if (!isNaN(server)) {
+        this._clockOffset = server - (t0 + t1) / 2;
+        this._clockSynced = t1;
+      }
+    } catch (e) {
+      /* keep the last offset */
+    } finally {
+      this._clockBusy = false;
+      this._refreshTime();
+    }
+  }
+
+  _remainingText() {
+    const st = this._hass && this._hass.states[this._config.state_entity];
+    if (!st) return "—";
+    if (st.state === "unavailable" || st.state === "unknown") return "Unavailable";
+    const end = st.attributes && st.attributes.ends_at ? Date.parse(st.attributes.ends_at) : NaN;
+    if (st.state === "off") return formatRemaining(0);
+    if (isNaN(end)) return "—"; // running but no end time: the integration and card versions don't match
+    return formatRemaining((end - (Date.now() + this._clockOffset)) / 60000);
+  }
+
+  _refreshTime() {
+    if (this._els) this._els.tr.textContent = this._remainingText();
   }
 
   /* ---------- sibling entities (found automatically on the same Flow device) ---------- */
   _entity(kind) {
     const c = this._config;
-    const explicit = kind === "dimming_level" ? c.dimming_entity : kind === "time_remaining" ? c.time_entity : undefined;
+    const explicit = kind === "dimming_level" ? c.dimming_entity : undefined;
     if (explicit) return explicit;
     const st = c.state_entity;
     if (!st || !this._hass) return undefined;
@@ -414,7 +489,6 @@ class FlowLampCard extends HTMLElement {
     const st = this._read(c.state_entity);
     const dimId = this._entity("dimming_level"); // none for lamps that can't dim
     const dl = dimId ? this._read(dimId) : undefined;
-    const tr = this._read(this._entity("time_remaining"));
     this._syncColors();
     const bad = (v) => v === undefined || v === "unknown" || v === "unavailable";
 
@@ -424,7 +498,8 @@ class FlowLampCard extends HTMLElement {
     this._els.dlrow.hidden = !dimId;
     const pct = bad(dl) || isNaN(Number(dl)) ? null : Math.max(0, Math.min(100, Number(dl)));
     this._els.dl.textContent = pct === null ? (dl === undefined ? "—" : "Unavailable") : `${Math.round(pct)}%`;
-    this._els.tr.textContent = bad(tr) ? (tr === undefined ? "—" : "Unavailable") : tr;
+    this._refreshTime();
+    if (this._hass && !this._clockSynced && Date.now() - this._clockTried > 60000) this._syncClock();
 
     // Light follows the dimmer output (still visibly lit when dimmed low). A lamp without
     // dimming is simply lit whenever it is on (warm-up and flowing).
